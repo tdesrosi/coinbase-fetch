@@ -46,8 +46,6 @@ This project is made possible via the coinbase api on npmjs. Every 1 hour, a set
 Thomas Desrosiers - [website](https://www.tdesrosi.com)
 
 
-
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555

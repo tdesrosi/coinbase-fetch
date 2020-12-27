@@ -109,6 +109,22 @@ async function writeValuesToSpreadsheet(accountBalance) {
     }
 }
 
+
+//get account balance upon program startup
+client.getAccounts({}, (err, accounts) => {
+    if (err) return console.log(err);
+    var cumulative_balance = 0;
+    accounts.forEach((acct) => {
+        cumulative_balance += (acct.native_balance.amount * 1);
+    });
+    console.log(new Date().toISOString()
+        .replace(/T/, ' ')
+        .replace(/\..+/, ''));
+    console.log(cumulative_balance);
+    writeValuesToSpreadsheet(cumulative_balance);
+});
+
+
 // interval function to get account balance every hour
 setInterval(() => {
     //get account balance
@@ -118,7 +134,9 @@ setInterval(() => {
         accounts.forEach((acct) => {
             cumulative_balance += (acct.native_balance.amount * 1);
         });
-        console.log(Date.now);
+        console.log(new Date().toISOString()
+            .replace(/T/, ' ')
+            .replace(/\..+/, ''));
         console.log(cumulative_balance);
         writeValuesToSpreadsheet(cumulative_balance);
     });
