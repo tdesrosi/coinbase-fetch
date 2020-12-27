@@ -45,7 +45,6 @@ This project is made possible via the coinbase api on npmjs. Every 1 hour, a set
 
 Thomas Desrosiers - [website](https://www.tdesrosi.com)
 
-Project Link: [https://github.com/github_username/repo_name](https://github.com/github_username/repo_name)
 
 
 
