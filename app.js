@@ -13,17 +13,13 @@ app.set('view engine', 'ejs')
 app.use(express.static('public'))
 app.use(bodyParser.urlencoded({ extended: true }))
 
-//testing coinbase call/spreadsheet update
-//console.log(main.balance(process.env.API_KEY));
-
-//testing official coinbase nodejs library
+//using official coinbase nodejs library
 var client = new coinbase.Client({ 'apiKey': process.env.API_KEY, 'apiSecret': process.env.API_SECRET });
 //for development purposes set SSL to false
 client.strictSSL = false;
 
 //function to authorize or check authorization 
 async function writeValuesToSpreadsheet(accountBalance) {
-    // If modifying these scopes, delete token.json.
     const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
     // The file token.json stores the user's access and refresh tokens, and is
     // created automatically when the authorization flow completes for the first
@@ -40,8 +36,6 @@ async function writeValuesToSpreadsheet(accountBalance) {
     /**
      * Create an OAuth2 client with the given credentials, and then execute the
      * given callback function.
-     * @param {Object} credentials The authorization client credentials.
-     * @param {function} callback The callback to call with the authorized client.
      */
     function authorize(credentials, callback) {
         const { client_secret, client_id, redirect_uris } = credentials.installed;
@@ -59,8 +53,6 @@ async function writeValuesToSpreadsheet(accountBalance) {
     /**
      * Get and store new token after prompting for user authorization, and then
      * execute the given callback with the authorized OAuth2 client.
-     * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
-     * @param {getEventsCallback} callback The callback for the authorized client.
      */
     function getNewToken(oAuth2Client, callback) {
         const authUrl = oAuth2Client.generateAuthUrl({
@@ -88,8 +80,6 @@ async function writeValuesToSpreadsheet(accountBalance) {
     }
     /**
      * Prints the names and majors of students in a sample spreadsheet:
-     * @see https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit
-     * @param {google.auth.OAuth2} auth The authenticated Google OAuth client.
      */
     function listMajors(auth) {
         const sheets = google.sheets({ version: 'v4', auth });
@@ -119,18 +109,20 @@ async function writeValuesToSpreadsheet(accountBalance) {
     }
 }
 
-//interval function to get account balance every hour
+// interval function to get account balance every hour
 setInterval(() => {
     //get account balance
     client.getAccounts({}, (err, accounts) => {
         if (err) return console.log(err);
+        var cumulative_balance = 0;
         accounts.forEach((acct) => {
-            writeValuesToSpreadsheet(acct.balance.amount);
-            console.log('my bal: ' + acct.balance.amount + ' for ' + acct.name);
+            cumulative_balance += (acct.native_balance.amount * 1);
         });
+        console.log(cumulative_balance);
+        writeValuesToSpreadsheet(cumulative_balance);
     });
 },
-    1000 * 60 * 60 //every 1 hours
+    1000 * 60 * 60 * 1 //every 1 hours
 );
 
 //open to web server
