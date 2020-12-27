@@ -30,7 +30,7 @@ async function writeValuesToSpreadsheet(accountBalance) {
     fs.readFile('credentials.json', (err, content) => {
         if (err) return console.log('Error loading client secret file:', err);
         // Authorize a client with credentials, then call the Google Sheets API.
-        authorize(JSON.parse(content), listMajors);
+        authorize(JSON.parse(content), writeBalances);
     });
 
     /**
@@ -79,9 +79,9 @@ async function writeValuesToSpreadsheet(accountBalance) {
         });
     }
     /**
-     * Prints the names and majors of students in a sample spreadsheet:
+     * Writes the balance to the spreadsheet
      */
-    function listMajors(auth) {
+    function writeBalances(auth) {
         const sheets = google.sheets({ version: 'v4', auth });
         sheets.spreadsheets.values.update({
             spreadsheetId: process.env.SHEET_ID,
@@ -118,6 +118,7 @@ setInterval(() => {
         accounts.forEach((acct) => {
             cumulative_balance += (acct.native_balance.amount * 1);
         });
+        console.log(Date.now);
         console.log(cumulative_balance);
         writeValuesToSpreadsheet(cumulative_balance);
     });
