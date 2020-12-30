@@ -1,25 +1,35 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const coinbase = require('coinbase');
+const { CoinbasePro } = require('coinbase-pro-node');
 const fs = require('fs');
 const readline = require('readline');
 const { google } = require('googleapis');
-const ejs = require('ejs');
 require('dotenv').config();
 
 const port = 4000;
 const app = express();
-app.set('view engine', 'ejs')
 app.use(express.static('public'))
 app.use(bodyParser.urlencoded({ extended: true }))
 
 //using official coinbase nodejs library
-var client = new coinbase.Client({ 'apiKey': process.env.API_KEY, 'apiSecret': process.env.API_SECRET });
+var client = new coinbase.Client({
+    'apiKey': process.env.API_KEY,
+    'apiSecret': process.env.API_SECRET
+});
 //for development purposes set SSL to false
 client.strictSSL = false;
 
+//using official coinbase pro nodejs library
+var pro_client = new CoinbasePro({
+    apiKey: process.env.PRO_API_KEY,
+    apiSecret: process.env.PRO_API_SECRET,
+    passphrase: process.env.PRO_PASSWORD
+});
+
+
 //function to authorize or check authorization 
-async function writeValuesToSpreadsheet(accountBalance) {
+async function writeValuesToSpreadsheet(accountBalance, accountType) {
     const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
     // The file token.json stores the user's access and refresh tokens, and is
     // created automatically when the authorization flow completes for the first
@@ -82,16 +92,25 @@ async function writeValuesToSpreadsheet(accountBalance) {
      * Writes the balance to the spreadsheet
      */
     function writeBalances(auth) {
+        var range = ""
+        var account_name = "";
+        if (accountType === "pro") {
+            range = 'Balances!A14:I14'
+            accountName = 'Coinbase Pro'
+        } else {
+            range = 'Balances!A13:I13'
+            accountName = 'Coinbase Regular'
+        }
         const sheets = google.sheets({ version: 'v4', auth });
         sheets.spreadsheets.values.update({
             spreadsheetId: process.env.SHEET_ID,
-            range: 'Balances!A13:I13',
+            range: range,
             valueInputOption: 'USER_ENTERED',
             resource: {
                 "values": [
                     [
-                        "Coinbase",
-                        "Coinbase",
+                        accountName,
+                        accountName,
                         "crypto",
                         accountBalance,
                         accountBalance,
@@ -110,36 +129,50 @@ async function writeValuesToSpreadsheet(accountBalance) {
 }
 
 
-//get account balance upon program startup
-client.getAccounts({}, (err, accounts) => {
-    if (err) return console.log(err);
-    var cumulative_balance = 0;
-    accounts.forEach((acct) => {
-        cumulative_balance += (acct.native_balance.amount * 1);
-    });
-    console.log(new Date().toISOString()
-        .replace(/T/, ' ')
-        .replace(/\..+/, ''));
-    console.log(cumulative_balance);
-    writeValuesToSpreadsheet(cumulative_balance);
-});
-
-
-// interval function to get account balance every hour
-setInterval(() => {
+async function getAccountBalances() {
     //get account balance
     client.getAccounts({}, (err, accounts) => {
         if (err) return console.log(err);
         var cumulative_balance = 0;
-        accounts.forEach((acct) => {
+        accounts.forEach(acct => {
             cumulative_balance += (acct.native_balance.amount * 1);
         });
         console.log(new Date().toISOString()
             .replace(/T/, ' ')
             .replace(/\..+/, ''));
         console.log(cumulative_balance);
-        writeValuesToSpreadsheet(cumulative_balance);
+        console.log("\n");
+        writeValuesToSpreadsheet(cumulative_balance, "regular");
     });
+
+    // get account balance for pro accounts, where
+    // I'll need to calculate the exchange to USD myself
+    client.getExchangeRates({ 'currency': 'USD' }, function (err, rates) {
+        //store a collection of current rates
+        var rate_collection = rates.data.rates;
+        //get all of my personal accounts
+        pro_client.rest.account.listAccounts().then(accounts => {
+            var cumulative_coin_balance = 0;
+            accounts.forEach(acct => {
+                var exchanged_value = rate_collection[acct.currency] * 1;
+                cumulative_coin_balance += ((acct.balance) / exchanged_value) || 0;
+            });
+            console.log(new Date().toISOString()
+                .replace(/T/, ' ')
+                .replace(/\..+/, ''));
+            console.log(cumulative_coin_balance);
+            console.log("\n");
+            writeValuesToSpreadsheet(cumulative_coin_balance, "pro");
+        });
+    });
+}
+
+// the meat and potatoes happens here
+// get account balances upon startup
+getAccountBalances();
+// interval function to get account balances every hour
+setInterval(() => {
+    getAccountBalances();
 },
     1000 * 60 * 60 * 1 //every 1 hours
 );
