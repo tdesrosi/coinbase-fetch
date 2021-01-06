@@ -165,6 +165,7 @@ async function getAccountBalances() {
             writeValuesToSpreadsheet(cumulative_coin_balance, "pro");
         });
     });
+    console.log("\n---------------------------------\n")
 }
 
 // the meat and potatoes happens here
@@ -179,5 +180,5 @@ setInterval(() => {
 
 //open to web server
 app.listen(process.env.PORT || port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
+    console.log(`Example app listening at http://localhost:${port}\n`)
 })
